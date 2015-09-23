@@ -1,0 +1,9 @@
+; $Id$
+name = Public Gallery
+description = This module will display a gallery of images uploaded to the public://gallery/ directory
+package = Custom
+core = 7.x
+dependencies[] = file_entity
+dependencies[] = image
+dependencies[] = media
+files[] = public_gallery.module

@@ -1,0 +1,279 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * A module that creates a page at http://yourdomain.com/gallery for viewing all
+ * managed files in the public://gallery directory.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function public_gallery_menu() {
+  // Menu items for managed files.
+  $items['gallery'] = array(
+    'title' => 'Gallery',
+    'description' => 'View a display of gallery images.',
+    'page callback' => 'public_gallery_display_files_page',
+    'access callback' => TRUE,
+  );
+  $items['gallery/update'] = array(
+    'title' => 'Gallery Update',
+    'description' => 'Updates the photo gallery.',
+    'page callback' => 'gallery_update_callback',
+    'access callback' => 'administer media',
+    'type' => MENU_CALLBACK,
+  );
+  $items['gallery/fix_thumbnails'] = array(
+    'title' => 'Fix the gallery thumbnails on the media page',
+    'description' => 'Updates the photo gallery media thumbnails.',
+    'page callback' => 'gallery_fix_thumbnails_callback',
+    'access callback' => 'administer media',
+    'type' => MENU_CALLBACK,
+  );
+  $items['gallery/deleted'] = array(
+    'title' => 'Search for deleted images',
+    'description' => 'Searches for deleted images and removes them',
+    'page callback' => 'gallery_deleted_callback',
+    'access callback' => 'administer media',
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_file_download().
+ */
+function public_gallery_file_download($uri) {
+
+  $path = file_uri_target($uri);
+
+  // Only apply logic to managed files that we've added.
+  if (strpos($path, 'gallery') === 0) {
+    $files = file_load_multiple(array(), array('uri' => $uri));
+    if (count($files)) {
+      foreach ($files as $file) {
+        if ($file->uri === $uri) {
+          return file_get_content_headers($file);
+        }
+      }
+    }
+    return -1;
+  }
+}
+
+/**
+ * Menu callback; Displays thumbnails of uploaded managed files.
+ */
+function public_gallery_display_files_page() {
+
+  $page = 0;
+  if (!empty($_GET['page'])) {
+    $page = $_GET['page'];
+  }
+  $output = '';
+  $directory = 'public://gallery';
+
+  // Run utility function to load files.
+  $files = public_gallery_load_files();
+
+  // Select only the first 20 files.
+  $count = count($files);
+  $files = array_slice($files,$page,20);
+
+  //if (user_access('views public_gallery')) {
+  if (user_access('administer media')) {
+    // Add link to update files.
+    $output .=
+    '<p>' . l(
+      'Update the gallery directory',
+      'gallery/update',
+      array('query' => array('destination' => current_path()))) .
+    '</p>';
+    $output .=
+    '<p>' . l(
+      'Fix broken thumbnails in media browser',
+      'gallery/fix_thumbnails',
+      array('query' => array('destination' => current_path()))) .
+    '</p>';
+    $output .=
+    '<p>' . l(
+      'Search for deleted images',
+      'gallery/deleted',
+      array('query' => array('destination' => current_path()))) .
+    '</p>';
+  }
+
+// START pager
+    $output .= '<p>';
+
+  //start link
+    $output .= l('start . ','gallery',array('query' => array('page' => '0')));
+
+  //prev link
+    if ($page == 0) {
+      //nothing, do not display
+    } else {
+      $output .=
+        l('prev . ','gallery',array('query' => array('page' => $page - 20)));
+    }
+
+  // next link
+    if ($page >= $count - 20) {
+      //nothing, do not display
+    } else {
+      $output .=
+        l('next','gallery',array('query' => array('page' => $page + 20)));
+    }
+
+    $output .= '</p>';
+  //END pager
+
+  // Loop through each file and display images.
+  foreach ($files as $file) {
+    $output .=
+    '<div style="float:left;margin:10px;padding:10px;border:1px solid grey;">'
+      . '<a href="' . file_create_url($file->uri) . '">'
+      . theme('image_style', array('style_name' => 'square_thumbnail', 'path' => $file->uri))
+      . '</a>' .
+    '</div>';
+  }
+
+  return $output;
+}
+
+/**
+ * Utility function to load all files that are in the /gallery folder.
+ */
+function public_gallery_load_files() {
+
+  // We would typically be tracking fid's in another table, but since we know the
+  // path, we can use a query to fetch results.
+  $query = new EntityFieldQuery;
+  $result = $query
+    ->entityCondition('entity_type', 'file')
+    ->propertyCondition('uri', 'public://gallery', 'STARTS_WITH')
+    ->execute();
+
+  // If there are results, send back a loaded file array.
+  if (count($result) > 0) {
+    foreach ($result['file'] as $fid => $file) {
+      $fids[] = $fid;
+    }
+    return file_load_multiple($fids);
+  }
+
+  return array();
+}
+
+
+/**
+ * Menu callback for gallery update.
+ */
+function gallery_update_callback() {
+  // Run utility function to load drupal's managed files.
+  $drupal_files = public_gallery_load_files();
+
+  // Run drupal's scan directory function to obtain a list of local files
+  $directory = 'public://gallery';
+  $local_files = file_scan_directory($directory, '/.*/');
+
+  // Compare the files in the gallery directory against known managed files
+  // Add a new drupal managed file if necessary.
+  foreach ($local_files as $local_file) {
+    $test = FALSE;
+    foreach ($drupal_files as $drupal_file) {
+      if ($local_file->filename == $drupal_file->filename) {
+        $test = TRUE;
+      } else {
+        // nothing
+      }
+    }
+    if ($test == TRUE) {
+      // nothing
+    } else {
+      // Add the file to drupal's managed database
+      $local_file->status = FILE_STATUS_PERMANENT;
+      $local_file->filemime = 'image/jpeg';
+      file_save($local_file);
+
+      // Need to add an entry in the file_usage table.
+      file_usage_add($local_file, 'gallery', 'image', 1);
+    }
+  }
+
+  // Let the user know it was successful
+  drupal_set_message(t("The gallery has been updated."));
+  drupal_goto($_GET['destination']);
+}
+
+/**
+ * Menu callback for gallery thumbnails fix.
+ */
+function gallery_fix_thumbnails_callback() {
+  // We would typically be tracking fid's in another table, but since we know the
+  // path, we can use a query to fetch results.
+  $query = new EntityFieldQuery;
+  $result = $query
+    ->entityCondition('entity_type', 'file')
+    ->propertyCondition('uri', 'public://gallery', 'STARTS_WITH')
+    ->propertyCondition('filemime', '', '=')
+    ->execute();
+
+  // Change the blank filemime to 'image/jpeg'
+  if (count($result) > 0) {
+    foreach ($result['file'] as $fid => $file) {
+      $fields = array(
+        'filemime' => 'image/jpeg'
+      );
+      db_update('file_managed')
+        ->condition('fid', $fid)
+        ->fields($fields)
+        ->execute();
+      }
+    }
+
+    drupal_set_message(t("The gallery has been updated."));
+    drupal_goto($_GET['destination']);
+}
+
+/**
+ * Menu callback for gallery deleted.
+ */
+function gallery_deleted_callback() {
+  // Run utility function to load drupal's managed files.
+  $drupal_files = public_gallery_load_files();
+
+  // Run drupal's scan directory function to obtain a list of local files
+  $directory = 'public://gallery';
+  $local_files = file_scan_directory($directory, '/.*/');
+
+  // Compare the files in the gallery directory against known managed files
+  // Add a new drupal managed file if necessary.
+  $count = 0;
+  foreach ($drupal_files as $drupal_file) {
+    $test = FALSE;
+    foreach ($local_files as $local_file) {
+      if ($drupal_file->filename == $local_file->filename) {
+        $test = TRUE;
+      } else {
+        // nothing
+      }
+    }
+    if ($test == TRUE) {
+      // nothing
+    } else {
+      // Need to remove an entry in the file_usage table.
+      file_usage_delete($drupal_file, 'gallery', 'image', 1);
+      file_delete($drupal_file);
+      $count = $count + 1;
+    }
+  }
+
+  drupal_set_message(t("The directory has been reviewed and " . $count .
+    " deletions were made."));
+
+  drupal_goto($_GET['destination']);
+}
