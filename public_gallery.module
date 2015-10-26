@@ -106,32 +106,8 @@ function public_gallery_display_files_page() {
     '</p>';
   }
 
-// START pager
-    $output .= '<p>';
-
-  //start link
-    $output .= l('start . ','gallery',array('query' => array('page' => '0')));
-
-  //prev link
-    if ($page == 0) {
-      //nothing, do not display
-    } else {
-      $output .=
-        l('prev . ','gallery',array('query' => array('page' => $page - 20)));
-    }
-
-  // next link
-    if ($page >= $count - 20) {
-      //nothing, do not display
-    } else {
-      $output .=
-        l('next','gallery',array('query' => array('page' => $page + 20)));
-    }
-
-    $output .= '</p>';
-  //END pager
-
   // Loop through each file and display images.
+  $output .= '<div>';
   foreach ($files as $file) {
     $output .=
     '<div style="float:left;margin:10px;padding:10px;border:1px solid grey;">'
@@ -140,6 +116,39 @@ function public_gallery_display_files_page() {
       . '</a>' .
     '</div>';
   }
+  $output .= '</div>';
+
+  // START pager
+    $output .= '<center><div style="display: inline-block; width=280px;">';
+
+  //start link
+    $output .= '<div style="float:left;margin:10px;padding:10px;border-radius: 25px;background:#C0C0C0">';
+    $output .= l('<<< first','gallery',array('query' => array('page' => '0')));
+    $output .= " ";
+    $output .= '</div>';
+
+  //prev link
+    if ($page == 0) {
+      //nothing, do not display
+    } else {
+        $output .= '<div style="float:left;margin:10px;padding:10px;border-radius: 25px;background:#C0C0C0">';
+        $output .= l('<< prev','gallery',array('query' => array('page' => $page - 20)));
+        $output .= " ";
+ 	$output .= '</div>';
+    }
+
+  // next link
+    if ($page >= $count - 20) {
+      //nothing, do not display
+    } else {
+      $output .= '<div style="float:left;margin:10px;padding:10px;border-radius: 25px;background:#C0C0C0">';
+      $output .= l('next >>','gallery',array('query' => array('page' => $page + 20)));
+      $output .= " ";    
+      $output .= '</div>';
+    }
+
+    $output .= '</div></center>';
+  //END pager
 
   return $output;
 }
