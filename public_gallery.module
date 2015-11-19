@@ -20,21 +20,21 @@ function public_gallery_menu() {
     'title' => 'Gallery Update',
     'description' => 'Updates the photo gallery.',
     'page callback' => 'gallery_update_callback',
-    'access callback' => 'administer media',
+    'access arguments' => array('administer media'),
     'type' => MENU_CALLBACK,
   );
   $items['gallery/fix_thumbnails'] = array(
     'title' => 'Fix the gallery thumbnails on the media page',
     'description' => 'Updates the photo gallery media thumbnails.',
     'page callback' => 'gallery_fix_thumbnails_callback',
-    'access callback' => 'administer media',
+    'access arguments' => array('administer media'),
     'type' => MENU_CALLBACK,
   );
   $items['gallery/deleted'] = array(
     'title' => 'Search for deleted images',
     'description' => 'Searches for deleted images and removes them',
     'page callback' => 'gallery_deleted_callback',
-    'access callback' => 'administer media',
+    'access arguments' => array('administer media'),
     'type' => MENU_CALLBACK,
   );
 
