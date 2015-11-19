@@ -1,6 +1,4 @@
 <?php
-// $Id$
-
 /**
  * @file
  * A module that creates a page at http://yourdomain.com/gallery for viewing all
@@ -81,7 +79,7 @@ function public_gallery_display_files_page() {
 
   // Select only the first 20 files.
   $count = count($files);
-  $files = array_slice($files,$page,20);
+  $files = array_slice($files, $page, 20);
 
   //if (user_access('views public_gallery')) {
   if (user_access('administer media')) {
@@ -123,27 +121,29 @@ function public_gallery_display_files_page() {
 
   //start link
     $output .= '<div style="float:left;margin:10px;padding:10px;border-radius: 25px;background:#C0C0C0">';
-    $output .= l('<<< first','gallery',array('query' => array('page' => '0')));
+    $output .= l(t('<<< first'), 'gallery', array('query' => array('page' => '0')));
     $output .= " ";
     $output .= '</div>';
 
   //prev link
     if ($page == 0) {
       //nothing, do not display
-    } else {
+    }
+    else {
         $output .= '<div style="float:left;margin:10px;padding:10px;border-radius: 25px;background:#C0C0C0">';
-        $output .= l('<< prev','gallery',array('query' => array('page' => $page - 20)));
+        $output .= l(t('<< prev'), 'gallery', array('query' => array('page' => $page - 20)));
         $output .= " ";
- 	$output .= '</div>';
+        $output .= '</div>';
     }
 
   // next link
     if ($page >= $count - 20) {
       //nothing, do not display
-    } else {
+    }
+    else {
       $output .= '<div style="float:left;margin:10px;padding:10px;border-radius: 25px;background:#C0C0C0">';
-      $output .= l('next >>','gallery',array('query' => array('page' => $page + 20)));
-      $output .= " ";    
+      $output .= l(t('next >>'), 'gallery', array('query' => array('page' => $page + 20)));
+      $output .= " ";
       $output .= '</div>';
     }
 
@@ -196,13 +196,15 @@ function gallery_update_callback() {
     foreach ($drupal_files as $drupal_file) {
       if ($local_file->filename == $drupal_file->filename) {
         $test = TRUE;
-      } else {
+      }
+      else {
         // nothing
       }
     }
     if ($test == TRUE) {
       // nothing
-    } else {
+    }
+    else {
       // Add the file to drupal's managed database
       $local_file->status = FILE_STATUS_PERMANENT;
       $local_file->filemime = 'image/jpeg';
@@ -267,13 +269,15 @@ function gallery_deleted_callback() {
     foreach ($local_files as $local_file) {
       if ($drupal_file->filename == $local_file->filename) {
         $test = TRUE;
-      } else {
+      }
+      else {
         // nothing
       }
     }
     if ($test == TRUE) {
       // nothing
-    } else {
+    }
+    else {
       // Need to remove an entry in the file_usage table.
       file_usage_delete($drupal_file, 'gallery', 'image', 1);
       file_delete($drupal_file);
@@ -281,7 +285,8 @@ function gallery_deleted_callback() {
     }
   }
 
-  drupal_set_message(t("The directory has been reviewed and " . $count .
+  drupal_set_message(t("The directory has been reviewed and " .
+    check_plain($count) .
     " deletions were made."));
 
   drupal_goto($_GET['destination']);
