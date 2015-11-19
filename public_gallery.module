@@ -286,8 +286,7 @@ function gallery_deleted_callback() {
   }
 
   drupal_set_message(t("The directory has been reviewed and " .
-    check_plain($count) .
-    " deletions were made."));
+    "$count deletions were made."));
 
   drupal_goto($_GET['destination']);
 }
