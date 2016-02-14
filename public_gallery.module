@@ -68,9 +68,13 @@ function public_gallery_file_download($uri) {
 function public_gallery_display_files_page() {
 
   $page = 0;
+
   if (!empty($_GET['page'])) {
-    $page = $_GET['page'];
+    if (is_numeric($_GET['page'])) {
+      $page = filter_input(INPUT_GET,$_GET['page'],FILTER_SANITIZE_NUMBER_INT);
+    }
   }
+
   $output = '';
   $directory = 'public://gallery';
 
@@ -110,7 +114,10 @@ function public_gallery_display_files_page() {
     $output .=
     '<div style="float:left;margin:10px;padding:10px;border:1px solid grey;">'
       . '<a href="' . file_create_url($file->uri) . '">'
-      . theme('image_style', array('style_name' => 'square_thumbnail', 'path' => $file->uri))
+      . theme('image_style', array(
+          'style_name' => 'square_thumbnail',
+          'path' => $file->uri
+        ))
       . '</a>' .
     '</div>';
   }
